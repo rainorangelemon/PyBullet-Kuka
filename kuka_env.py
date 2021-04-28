@@ -12,8 +12,7 @@ class KukaEnv:
 
     def __init__(self, GUI=False):
         '''
-        :param GUI:
-        :param kuka_file:
+        :param GUI: True if user wants to show the GUI
         '''
         self.kuka_file = "kuka_iiwa/model.urdf"
 
