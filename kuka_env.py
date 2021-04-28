@@ -5,7 +5,7 @@ import pybullet_data
 
 class KukaEnv:
     '''
-    Interface class for maze environment
+    Interface class for kuka environment
     '''
 
     EPS = 0.1
