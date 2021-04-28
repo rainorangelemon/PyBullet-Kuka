@@ -1,15 +1,10 @@
 from kuka_env import KukaEnv
-import pybullet as p
 import numpy as np
 
 
 GUI = True
-make_gif = True
+make_gif = False
 env = KukaEnv(GUI=GUI)
-
-# set feasible start and goal config
-env.set_random_init_goal()
-
 
 # plot trajectory
 path = [(0.3542580627450649, -2.022089521226548, -2.2182339069315398, 0.9115339602971932, 2.752754863673904, 0.36717590416693646, 1.448471191228442),
