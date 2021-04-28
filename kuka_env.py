@@ -51,53 +51,6 @@ class KukaEnv:
             p.resetJointState(kukaId, i, c[i])
         p.performCollisionDetection()
 
-    def uniform_sample(self, n=1):
-        '''
-        Uniformlly sample in the configuration space
-        '''
-        sample = np.random.uniform(np.array(self.pose_range)[:, 0], np.array(self.pose_range)[:, 1], size=(n, self.config_dim))
-        if n==1:
-            return sample.reshape(-1)
-        else:
-            return sample
-
-    def is_free(self, state):
-        if not self._valid_state(state):
-            return False
-
-        self.set_config(state)
-        if len(p.getContactPoints(self.kukaId)) == 0:
-            return True
-        else:
-            return False
-
-    def distance(self, from_state, to_state):
-        '''
-        Distance metric
-        '''
-
-        to_state = np.maximum(to_state, np.array(self.pose_range)[:, 0])
-        to_state = np.minimum(to_state, np.array(self.pose_range)[:, 1])
-        diff = np.abs(to_state - from_state)
-
-        return np.sqrt(np.sum(diff ** 2, axis=-1))
-
-    def interpolate(self, from_state, to_state, ratio):
-        diff = to_state - from_state
-
-        new_state = from_state + diff * ratio
-        new_state = np.maximum(new_state, np.array(self.pose_range)[:, 0])
-        new_state = np.minimum(new_state, np.array(self.pose_range)[:, 1])
-
-        return new_state
-
-    def in_goal_region(self, state):
-        '''
-        Return whether a state(configuration) is in the goal region
-        '''
-        return self.distance(state, self.goal_state) < self.EPS and \
-               self._state_fp(state)
-
     def plot(self, path, make_gif=False):
         path = np.array(path)
         self.set_config(path[0])
@@ -137,22 +90,29 @@ class KukaEnv:
 
         return gifs
 
-    # =====================internal collision check module=======================
+    # ===========================Collision Checking=================================
 
-    def _valid_state(self, state):
+    def valid_state(self, state):
         return (state >= np.array(self.pose_range)[:, 0]).all() and \
                (state <= np.array(self.pose_range)[:, 1]).all()
 
-    def _state_fp(self, state):
-        return self.is_free(state)
+    def is_state_free(self, state):
+        if not self.valid_state(state):
+            return False
 
-    def _edge_fp(self, state, new_state):
+        self.set_config(state)
+        if len(p.getContactPoints(self.kukaId)) == 0:
+            return True
+        else:
+            return False
+
+    def is_edge_free(self, state, new_state):
         self.k = 0
         assert state.size == new_state.size
 
-        if not self._valid_state(state) or not self._valid_state(new_state):
+        if not self.valid_state(state) or not self.valid_state(new_state):
             return False
-        if not self._state_fp(state) or not self._state_fp(new_state):
+        if not self.is_state_free(state) or not self.is_state_free(new_state):
             return False
 
         disp = new_state - state
@@ -161,6 +121,45 @@ class KukaEnv:
         K = int(d / self.EPS)
         for k in range(0, K):
             c = state + k * 1. / K * disp
-            if not self._state_fp(c):
+            if not self.is_state_free(c):
                 return False
         return True
+
+    # =============================Sampling==========================================
+
+    def uniform_sample(self, n=1):
+        '''
+        Uniformlly sample in the configuration space
+        '''
+        sample = np.random.uniform(np.array(self.pose_range)[:, 0], np.array(self.pose_range)[:, 1], size=(n, self.config_dim))
+        if n==1:
+            return sample.reshape(-1)
+        else:
+            return sample
+
+    def distance(self, from_state, to_state):
+        '''
+        Distance metric
+        '''
+
+        to_state = np.maximum(to_state, np.array(self.pose_range)[:, 0])
+        to_state = np.minimum(to_state, np.array(self.pose_range)[:, 1])
+        diff = np.abs(to_state - from_state)
+
+        return np.sqrt(np.sum(diff ** 2, axis=-1))
+
+    def interpolate(self, from_state, to_state, ratio):
+        diff = to_state - from_state
+
+        new_state = from_state + diff * ratio
+        new_state = np.maximum(new_state, np.array(self.pose_range)[:, 0])
+        new_state = np.minimum(new_state, np.array(self.pose_range)[:, 1])
+
+        return new_state
+
+    def in_goal_region(self, state):
+        '''
+        Return whether a state(configuration) is in the goal region
+        '''
+        return self.distance(state, self.goal_state) < self.EPS and \
+               self._is_state_free(state)
